@@ -1,0 +1,71 @@
+# Study the characteristics of the AD & CN populations (age, sex, MMS, cdr_global)
+def characteristics_table(df, merged_df):
+    """Creates a DataFrame that summarizes the characteristics of the DataFrame df"""
+    diagnoses = np.unique(df.diagnosis.values)
+    population_df = pd.DataFrame(index=diagnoses,
+                                columns=['N', 'age', '%sexF', 'education',
+                                         'MMS', 'CDR=0', 'CDR=0.5', 'CDR=1', 'CDR=2'])
+    merged_df = merged_df.set_index(['participant_id', 'session_id'], drop=True)
+    from torch.utils.data import Dataset, DataLoader, sampler
+from os import path
+
+class MRIDataset(Dataset):
+
+    def __init__(self, img_dir, data_df, transform=None):
+        """
+        Args:
+            img_dir (str): path to the CAPS directory containing preprocessed images
+            data_df (DataFrame): metadata of the population.
+                Columns include participant_id, session_id and diagnosis).
+            transform (callable): list of transforms applied on-the-fly, chained with torchvision.transforms.Compose.
+        """
+        self.img_dir = img_dir
+        self.transform = transform
+        self.data_df = data_df
+        self.label_code = {"AD": 1, "CN": 0}
+
+        self.size = self[0]['image'].shape
+
+    def __len__(self):
+        return len(self.data_df)
+
+    class CropLeftHC(object):
+    """Crops the left hippocampus of a MRI non-linearly registered to MNI"""
+    def __init__(self, random_shift=0):
+        self.random_shift = random_shift
+        self.train_mode = True
+    def __call__(self, img):
+        if self.train_mode:
+            x = random.randint(-self.random_shift, self.random_shift)
+            y = random.randint(-self.random_shift, self.random_shift)
+            z = random.randint(-self.random_shift, self.random_shift)
+        else:
+            x, y, z = 0, 0, 0
+        return img[:, 25 + x:55 + x,
+                   50 + y:90 + y,
+                   27 + z:57 + z].clone()
+
+    import matplotlib.pyplot as plt
+import nibabel as nib
+from scipy.ndimage import rotate
+
+subject = 'sub-OASIS10003'
+preprocessed_pt = torch.load(f'OASIS-1_dataset/CAPS/subjects/{subject}/ses-M00/' +
+                    f'deeplearning_prepare_data/image_based/custom/{subject}_ses-M00_' +
+                    'T1w_segm-graymatter_space-Ixi549Space_modulated-off_' +
+                    'probability.pt')
+raw_nii = nib.load(f'OASIS-1_dataset/raw/{subject}_ses-M00_T1w.nii.gz')
+
+raw_np = raw_nii.get_fdata()
+
+img_dir = path.join('OASIS-1_dataset', 'CAPS')
+batch_size=4
+
+example_dataset = MRIDataset(img_dir, OASIS_df, transform=CropLeftHC())
+example_dataloader = DataLoader(example_dataset, batch_size=batch_size, drop_last=True)
+for data in example_dataloader:
+    pass
+
+print(f"Shape of Dataset output:\n {example_dataset[0]['image'].shape}\n")
+
+print(f"Shape of DataLoader output:\n {data['image'].shape}")

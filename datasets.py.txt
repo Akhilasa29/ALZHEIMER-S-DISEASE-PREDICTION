@@ -1,0 +1,11 @@
+# Load the complete dataset
+OASIS_df = pd.read_csv(
+    'OASIS-1_dataset/tsv_files/lab_1/OASIS_BIDS.tsv', sep='\t',
+    usecols=['participant_id', 'session_id', 'alternative_id_1', 'sex',
+             'education_level', 'age_bl', 'diagnosis_bl', 'laterality', 'MMS',
+             'cdr_global', 'diagnosis']
+)
+# Show first items of the table
+print(OASIS_df.head())
+# First visual inspection
+_ = OASIS_df.hist(figsize=(16, 8))

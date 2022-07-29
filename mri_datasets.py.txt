@@ -1,0 +1,58 @@
+# Study the characteristics of the AD & CN populations (age, sex, MMS, cdr_global)
+def characteristics_table(df, merged_df):
+    """Creates a DataFrame that summarizes the characteristics of the DataFrame df"""
+    diagnoses = np.unique(df.diagnosis.values)
+    population_df = pd.DataFrame(index=diagnoses,
+                                columns=['N', 'age', '%sexF', 'education',
+                                         'MMS', 'CDR=0', 'CDR=0.5', 'CDR=1', 'CDR=2'])
+    merged_df = merged_df.set_index(['participant_id', 'session_id'], drop=True)
+    from torch.utils.data import Dataset, DataLoader, sampler
+from os import path
+
+class MRIDataset(Dataset):
+
+    def __init__(self, img_dir, data_df, transform=None):
+        """
+        Args:
+            img_dir (str): path to the CAPS directory containing preprocessed images
+            data_df (DataFrame): metadata of the population.
+                Columns include participant_id, session_id and diagnosis).
+            transform (callable): list of transforms applied on-the-fly, chained with torchvision.transforms.Compose.
+        """
+        self.img_dir = img_dir
+        self.transform = transform
+        self.data_df = data_df
+        self.label_code = {"AD": 1, "CN": 0}
+
+        self.size = self[0]['image'].shape
+
+    def __len__(self):
+        return len(self.data_df)
+
+    def __getitem__(self, idx):
+
+        diagnosis = self.data_df.loc[idx, 'diagnosis']
+        label = self.label_code[diagnosis]
+
+        participant_id = self.data_df.loc[idx, 'participant_id']
+        session_id = self.data_df.loc[idx, 'session_id']
+        filename = 'subjects/' + participant_id + '/' + session_id + '/' + \
+          'deeplearning_prepare_data/image_based/custom/' + \
+          participant_id + '_' + session_id + \
+          '_T1w_segm-graymatter_space-Ixi549Space_modulated-off_probability.pt'
+
+        image = torch.load(path.join(self.img_dir, filename))
+
+        if self.transform:
+            image = self.transform(image)
+
+        sample = {'image': image, 'label': label,
+                  'participant_id': participant_id,
+                  'session_id': session_id}
+        return sample
+
+    def train(self):
+        self.transform.train()
+
+    def eval(self):
+        self.transform.eval()

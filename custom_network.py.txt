@@ -1,0 +1,40 @@
+# To complete
+class CustomNetwork(nn.Module):
+
+    def __init__(self):
+        super(CustomNetwork, self).__init__()
+        self.convolutions = nn.Sequential(
+            nn.Conv3d(1, 8, 3, padding=1),
+            # Size 8@30x40x30
+            nn.BatchNorm3d(8),
+            nn.LeakyReLU(),
+            PadMaxPool3d(2, 2),
+            # Size 8@15x20x15
+
+            nn.Conv3d(8, 16, 3, padding=1),
+            # Size 16@15x20x15
+            nn.BatchNorm3d(16),
+            nn.LeakyReLU(),
+            PadMaxPool3d(2, 2),
+            # Size 16@8x10x8)
+
+            nn.Conv3d(16, 32, 3, padding=1),
+            # Size 32@8x10x8
+            nn.BatchNorm3d(32),
+            nn.LeakyReLU(),
+            PadMaxPool3d(2, 2),
+            # Size 32@4x5x4
+
+        )
+
+        self.linear = nn.Sequential(
+            nn.Dropout(p=0.5),
+            nn.Linear(32 * 4 * 5 * 4, 2)
+
+        )
+
+    def forward(self, x):
+        x = self.convolutions(x)
+        x = x.view(x.size(0), -1)
+        x = self.linear(x)
+        return x

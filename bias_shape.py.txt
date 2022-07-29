@@ -1,0 +1,6 @@
+from torch import nn
+
+conv_layer = nn.Conv3d(8, 16, 3)
+print('Weights shape\n', conv_layer.weight.shape)
+print()
+print('Bias shape\n', conv_layer.bias.shape)
